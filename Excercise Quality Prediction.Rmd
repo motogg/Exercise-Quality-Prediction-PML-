@@ -1,0 +1,117 @@
+---
+title: "Barbell Lift Quality Prediction"
+author: "Gbolahan"
+date: "October 5, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, comment = "")
+library(ggplot2)
+library(caret)
+```
+
+##Introduction
+The Quantified Self Movement is a new trend in which enthusiasts take measurements using wearables to know how much of an activity they do. This project goes one step further to predict the quality of execution of the activity (in this case, barbell lifting) they do.
+
+```{r dataset_loading }
+if(!file.exists("~/Documents/MOOC materials/Data Science Specialization/Practical Machine Learning/Project/pml-training.csv")){
+        
+        urlTrain = "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+        download.file(destfile = "~/Documents/MOOC materials/Data Science Specialization/Practical Machine Learning/Project/pml-training.csv", url = urlTrain)
+        
+} else if(!file.exists("~/Documents/MOOC materials/Data Science Specialization/Practical Machine Learning/Project/pml-testing.csv")){
+        
+        urlTest = "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+        download.file(destfile = "~/Documents/MOOC materials/Data Science 
+Specialization/Practical Machine Learning/Project/pml-testing.csv", url = urlTest)
+        
+}
+
+TrainFile = "~/Documents/MOOC materials/Data Science Specialization/Practical Machine Learning/Project/pml-training.csv"
+TestFile = "~/Documents/MOOC materials/Data Science Specialization/Practical Machine Learning/Project/pml-testing.csv"
+
+Data = read.csv(TrainFile, stringsAsFactors = F, na.strings = c("NA",""))
+Test = read.csv(TestFile, stringsAsFactors = F)
+
+rm(TestFile, TrainFile)
+        
+```
+
+## Initial Exploration
+The data set contain variable with high missingness rates. This may necessitate imputation, listwise deletion or complete removal of the variables with high missingness rates. The figure below shows the missingness of the data set. Also, the Dependence of the outcome, "classe" on index is investigated.
+
+```{r initial_Exploration1, fig.align='center'}
+suppressWarnings(library(Amelia))
+# produces missingness map
+missmap(Data, col = c("red","navy"), y.labels = NULL, y.at = NULL)
+```
+
+```{r, initial_Exploration2, fig.align= 'center'}
+# investigates classe w.r.t index
+with(Data, qplot(1:nrow(Data), factor(classe), col = factor(classe), xlab = "Index", ylab = "classe"))
+```
+
+The missingness map shows that the variables that contain missing values have a high missingness rate. Also the missingness according to the missingness map has a pattern to it and is therefore of the type **MNAR** (Missing Not At Random), that is missing systematically, so imputation would not be a good option. Hence, **the variables that contain these missing values would be discarded from the data set**.  
+Also, the second plot shows that outcome "classe" is dependent on the index. This would prevent some algorithms such as the logistic regression algorithm from converging. This issue can be easily rectified by randomizing the data set.
+
+```{r prepoc_1}
+missThreshold = function(dataframe, threshold){
+        
+        set.seed(1)
+        # Shuffles Dataframe
+        x = dataframe[sample(seq_len(nrow(dataframe)), nrow(dataframe)), ]
+        
+        # Computes the percentage missing in each variable
+        percentMissing = sapply(x, function(x){
+                sum(is.na(x))* 100/length(x)
+        } )
+        
+        # Determines which variables to keep or discard
+        toKeep = ifelse(percentMissing <= threshold, 1, 0)
+        toKeep = toKeep == 1
+        x[toKeep]
+}
+
+
+Data = missThreshold(Data, 80)
+Data$X = NULL
+Data = transform(Data, classe = factor(classe))
+
+```
+
+## Model Building
+The model is built using the train function from the caret package. Because the nature of the variables is not easy to understand, Principal components Analysis is used to extract principal components from the dataset with 95% variance built in. The model is the cross-validated using k-fold cross validation as specified by the *fitControl Variable*. The Model is printed below.
+
+```{r model_Building}
+set.seed(1)
+inTrain = createDataPartition(Data$classe, p = 0.8 , list = F)
+Training = Data[inTrain,]
+Testing = Data[-inTrain,]
+
+
+rm(inTrain)
+fitControl = trainControl(method = "cv",
+                          number = 5,
+                          preProcOptions = list(thresh = 0.95),
+                          allowParallel = T)
+
+tuningGrid = expand.grid(.cp = seq(.0001,.005,.0002))
+
+set.seed(1)
+fit = train(classe ~., data = Training, method = "rpart", preProcess = "pca", 
+            trControl = fitControl, tuneGrid = tuningGrid)
+fit
+```
+
+## Testing for Out-of-Sample Accuracy
+The outcome of the *Testing* dataset is predicted by calling the predict function on the model *fit* using the Testing dataset. The predictions are then compared to the actual values of the *classe* variable using a confusion matrix generated by the *confusionMatrix* function.
+
+```{r OoS_Accuracy}
+# Predicts the outcome of the Testing data set 
+predTest = predict(fit, Testing)
+
+# Creates the confusion Matrix which generates the out-of-sample accuracy
+confusionMatrix(predTest, Testing$classe)
+```
+
