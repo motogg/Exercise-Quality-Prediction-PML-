@@ -189,7 +189,7 @@ Data = transform(Data, classe = factor(classe))</code></pre>
 <h2>Model Building</h2>
 <p>The model is built using the train function from the caret package. Because the nature of the variables is not easy to understand, Principal components Analysis is used to extract principal components from the dataset with 95% variance built in. The model is the cross-validated using k-fold cross validation as specified by the <em>fitControl Variable</em>. The Model is printed below.</p>
 <pre class="r"><code>set.seed(1)
-inTrain = createDataPartition(Data$classe, p = 0.8 , list = F)
+inTrain = createDataPartition(Data$classe, p = 0.85 , list = F)
 Training = Data[inTrain,]
 Testing = Data[-inTrain,]
 
@@ -197,10 +197,10 @@ Testing = Data[-inTrain,]
 rm(inTrain)
 fitControl = trainControl(method = &quot;cv&quot;,
                           number = 5,
-                          preProcOptions = list(thresh = 0.99),
+                          preProcOptions = list(thresh = 0.95),
                           allowParallel = T)
 
-tuningGrid = expand.grid(.cp = seq(.0001,.005,.0002))
+tuningGrid = expand.grid(.cp = seq(.00006,.0004,.00002))
 
 set.seed(1)
 fit = train(classe ~., data = Training, method = &quot;rpart&quot;, preProcess = &quot;pca&quot;, 
@@ -209,45 +209,38 @@ fit = train(classe ~., data = Training, method = &quot;rpart&quot;, preProcess =
 <pre class="r"><code>fit</code></pre>
 <pre><code>CART 
 
-15699 samples
+16680 samples
    58 predictor
     5 classes: 'A', 'B', 'C', 'D', 'E' 
 
 Pre-processing: principal component signal extraction (80), centered
  (80), scaled (80) 
 Resampling: Cross-Validated (5 fold) 
-Summary of sample sizes: 12559, 12558, 12559, 12561, 12559 
+Summary of sample sizes: 13345, 13343, 13345, 13343, 13344 
 Resampling results across tuning parameters:
 
-  cp      Accuracy   Kappa    
-  0.0001  0.8819042  0.8505821
-  0.0003  0.8806300  0.8489485
-  0.0005  0.8750247  0.8418461
-  0.0007  0.8679548  0.8329369
-  0.0009  0.8562351  0.8181128
-  0.0011  0.8504383  0.8107345
-  0.0013  0.8388461  0.7961187
-  0.0015  0.8345149  0.7906518
-  0.0017  0.8250867  0.7787839
-  0.0019  0.8166146  0.7680458
-  0.0021  0.8138120  0.7645013
-  0.0023  0.8061688  0.7547445
-  0.0025  0.8003091  0.7472717
-  0.0027  0.7904996  0.7347845
-  0.0029  0.7797982  0.7211069
-  0.0031  0.7784604  0.7194035
-  0.0033  0.7733639  0.7131391
-  0.0035  0.7684590  0.7067091
-  0.0037  0.7640644  0.7013075
-  0.0039  0.7604338  0.6968793
-  0.0041  0.7594786  0.6956557
-  0.0043  0.7562299  0.6914633
-  0.0045  0.7508788  0.6847706
-  0.0047  0.7460379  0.6787193
-  0.0049  0.7392864  0.6701204
+  cp       Accuracy   Kappa    
+  0.00006  0.8877681  0.8580052
+  0.00008  0.8875882  0.8577752
+  0.00010  0.8875882  0.8577752
+  0.00012  0.8870485  0.8571002
+  0.00014  0.8873483  0.8574833
+  0.00016  0.8873483  0.8574920
+  0.00018  0.8872883  0.8574161
+  0.00020  0.8874683  0.8576450
+  0.00022  0.8862095  0.8560418
+  0.00024  0.8862694  0.8561094
+  0.00026  0.8863894  0.8562507
+  0.00028  0.8857900  0.8554920
+  0.00030  0.8855503  0.8551949
+  0.00032  0.8832116  0.8522552
+  0.00034  0.8832116  0.8522552
+  0.00036  0.8831516  0.8521895
+  0.00038  0.8823722  0.8512080
+  0.00040  0.8823722  0.8512080
 
 Accuracy was used to select the optimal model using  the largest value.
-The final value used for the model was cp = 1e-04. </code></pre>
+The final value used for the model was cp = 6e-05. </code></pre>
 </div>
 <div id="testing-for-out-of-sample-accuracy" class="section level2">
 <h2>Testing for Out-of-Sample Accuracy</h2>
@@ -260,34 +253,34 @@ confusionMatrix(predTest, Testing$classe)</code></pre>
 <pre><code>Confusion Matrix and Statistics
 
           Reference
-Prediction    A    B    C    D    E
-         A 1016   47   18    8   12
-         B   63  649   56    5   13
-         C   26   45  587   28   10
-         D    2   10   18  553   22
-         E    9    8    5   49  664
+Prediction   A   B   C   D   E
+         A 785  40  19   4   5
+         B  35 485  35   4   6
+         C  12  40 434  25   5
+         D   4   4  16 428  15
+         E   1   0   9  21 510
 
 Overall Statistics
                                           
-               Accuracy : 0.8843          
-                 95% CI : (0.8738, 0.8941)
+               Accuracy : 0.898           
+                 95% CI : (0.8865, 0.9087)
     No Information Rate : 0.2845          
-    P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+    P-Value [Acc &gt; NIR] : &lt;2e-16          
                                           
-                  Kappa : 0.8536          
- Mcnemar's Test P-Value : 0.003776        
+                  Kappa : 0.8709          
+ Mcnemar's Test P-Value : 0.1309          
 
 Statistics by Class:
 
                      Class: A Class: B Class: C Class: D Class: E
-Sensitivity            0.9104   0.8551   0.8582   0.8600   0.9209
-Specificity            0.9697   0.9567   0.9663   0.9841   0.9778
-Pos Pred Value         0.9228   0.8257   0.8434   0.9140   0.9034
-Neg Pred Value         0.9646   0.9649   0.9699   0.9729   0.9821
-Prevalence             0.2845   0.1935   0.1744   0.1639   0.1838
-Detection Rate         0.2590   0.1654   0.1496   0.1410   0.1693
-Detection Prevalence   0.2807   0.2004   0.1774   0.1542   0.1874
-Balanced Accuracy      0.9401   0.9059   0.9123   0.9221   0.9494</code></pre>
+Sensitivity            0.9379   0.8524   0.8460   0.8880   0.9427
+Specificity            0.9677   0.9663   0.9662   0.9841   0.9871
+Pos Pred Value         0.9203   0.8584   0.8411   0.9165   0.9427
+Neg Pred Value         0.9751   0.9647   0.9674   0.9782   0.9871
+Prevalence             0.2845   0.1934   0.1744   0.1638   0.1839
+Detection Rate         0.2668   0.1649   0.1475   0.1455   0.1734
+Detection Prevalence   0.2899   0.1920   0.1754   0.1587   0.1839
+Balanced Accuracy      0.9528   0.9093   0.9061   0.9361   0.9649</code></pre>
 <pre class="r"><code>pred = predict(fit, Test)
 solution = data.frame(problem.no = 1:20, classe = pred)
 
@@ -295,7 +288,7 @@ solution</code></pre>
 <pre><code>   problem.no classe
 1           1      B
 2           2      A
-3           3      A
+3           3      C
 4           4      A
 5           5      A
 6           6      E
@@ -305,7 +298,7 @@ solution</code></pre>
 10         10      A
 11         11      B
 12         12      C
-13         13      C
+13         13      B
 14         14      A
 15         15      E
 16         16      E
