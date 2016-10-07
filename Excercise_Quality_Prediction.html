@@ -9,7 +9,6 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="Gbolahan" />
 
 
 <title>Barbell Lift Quality Prediction</title>
@@ -116,7 +115,6 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">Barbell Lift Quality Prediction</h1>
-<h4 class="author"><em>Gbolahan</em></h4>
 <h4 class="date"><em>October 5, 2016</em></h4>
 
 </div>
@@ -199,7 +197,7 @@ Testing = Data[-inTrain,]
 rm(inTrain)
 fitControl = trainControl(method = &quot;cv&quot;,
                           number = 5,
-                          preProcOptions = list(thresh = 0.95),
+                          preProcOptions = list(thresh = 0.99),
                           allowParallel = T)
 
 tuningGrid = expand.grid(.cp = seq(.0001,.005,.0002))
@@ -222,31 +220,31 @@ Summary of sample sizes: 12559, 12558, 12559, 12561, 12559
 Resampling results across tuning parameters:
 
   cp      Accuracy   Kappa    
-  0.0001  0.8797391  0.8479343
-  0.0003  0.8769365  0.8443750
-  0.0005  0.8704388  0.8361207
-  0.0007  0.8626680  0.8262878
-  0.0009  0.8510114  0.8115065
-  0.0011  0.8452140  0.8041672
-  0.0013  0.8358506  0.7923330
-  0.0015  0.8286528  0.7832726
-  0.0017  0.8189706  0.7710884
-  0.0019  0.8113910  0.7615023
-  0.0021  0.8083340  0.7576633
-  0.0023  0.8021555  0.7497507
-  0.0025  0.7968691  0.7428151
-  0.0027  0.7914546  0.7359367
-  0.0029  0.7783332  0.7193670
-  0.0031  0.7751485  0.7153180
-  0.0033  0.7699888  0.7089229
-  0.0035  0.7650841  0.7028923
-  0.0037  0.7599888  0.6964785
-  0.0039  0.7583964  0.6944423
-  0.0041  0.7561038  0.6915408
-  0.0043  0.7500524  0.6838000
-  0.0045  0.7474409  0.6805068
-  0.0047  0.7408802  0.6722735
-  0.0049  0.7343205  0.6641409
+  0.0001  0.8819042  0.8505821
+  0.0003  0.8806300  0.8489485
+  0.0005  0.8750247  0.8418461
+  0.0007  0.8679548  0.8329369
+  0.0009  0.8562351  0.8181128
+  0.0011  0.8504383  0.8107345
+  0.0013  0.8388461  0.7961187
+  0.0015  0.8345149  0.7906518
+  0.0017  0.8250867  0.7787839
+  0.0019  0.8166146  0.7680458
+  0.0021  0.8138120  0.7645013
+  0.0023  0.8061688  0.7547445
+  0.0025  0.8003091  0.7472717
+  0.0027  0.7904996  0.7347845
+  0.0029  0.7797982  0.7211069
+  0.0031  0.7784604  0.7194035
+  0.0033  0.7733639  0.7131391
+  0.0035  0.7684590  0.7067091
+  0.0037  0.7640644  0.7013075
+  0.0039  0.7604338  0.6968793
+  0.0041  0.7594786  0.6956557
+  0.0043  0.7562299  0.6914633
+  0.0045  0.7508788  0.6847706
+  0.0047  0.7460379  0.6787193
+  0.0049  0.7392864  0.6701204
 
 Accuracy was used to select the optimal model using  the largest value.
 The final value used for the model was cp = 1e-04. </code></pre>
@@ -263,33 +261,58 @@ confusionMatrix(predTest, Testing$classe)</code></pre>
 
           Reference
 Prediction    A    B    C    D    E
-         A 1029   59   25    8    8
-         B   59  642   38    6    5
-         C   17   43  574   28    7
-         D    3    6   35  548   30
-         E    8    9   12   53  671
+         A 1016   47   18    8   12
+         B   63  649   56    5   13
+         C   26   45  587   28   10
+         D    2   10   18  553   22
+         E    9    8    5   49  664
 
 Overall Statistics
                                           
-               Accuracy : 0.883           
-                 95% CI : (0.8725, 0.8929)
+               Accuracy : 0.8843          
+                 95% CI : (0.8738, 0.8941)
     No Information Rate : 0.2845          
-    P-Value [Acc &gt; NIR] : &lt;2e-16          
+    P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
                                           
-                  Kappa : 0.8519          
- Mcnemar's Test P-Value : 0.1864          
+                  Kappa : 0.8536          
+ Mcnemar's Test P-Value : 0.003776        
 
 Statistics by Class:
 
                      Class: A Class: B Class: C Class: D Class: E
-Sensitivity            0.9220   0.8458   0.8392   0.8523   0.9307
-Specificity            0.9644   0.9659   0.9707   0.9774   0.9744
-Pos Pred Value         0.9114   0.8560   0.8580   0.8810   0.8911
-Neg Pred Value         0.9689   0.9631   0.9662   0.9712   0.9842
+Sensitivity            0.9104   0.8551   0.8582   0.8600   0.9209
+Specificity            0.9697   0.9567   0.9663   0.9841   0.9778
+Pos Pred Value         0.9228   0.8257   0.8434   0.9140   0.9034
+Neg Pred Value         0.9646   0.9649   0.9699   0.9729   0.9821
 Prevalence             0.2845   0.1935   0.1744   0.1639   0.1838
-Detection Rate         0.2623   0.1637   0.1463   0.1397   0.1710
-Detection Prevalence   0.2878   0.1912   0.1705   0.1586   0.1919
-Balanced Accuracy      0.9432   0.9059   0.9049   0.9148   0.9525</code></pre>
+Detection Rate         0.2590   0.1654   0.1496   0.1410   0.1693
+Detection Prevalence   0.2807   0.2004   0.1774   0.1542   0.1874
+Balanced Accuracy      0.9401   0.9059   0.9123   0.9221   0.9494</code></pre>
+<pre class="r"><code>pred = predict(fit, Test)
+solution = data.frame(problem.no = 1:20, classe = pred)
+
+solution</code></pre>
+<pre><code>   problem.no classe
+1           1      B
+2           2      A
+3           3      A
+4           4      A
+5           5      A
+6           6      E
+7           7      D
+8           8      B
+9           9      A
+10         10      A
+11         11      B
+12         12      C
+13         13      C
+14         14      A
+15         15      E
+16         16      E
+17         17      A
+18         18      B
+19         19      B
+20         20      B</code></pre>
 </div>
 
 

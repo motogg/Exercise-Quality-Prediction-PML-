@@ -1,6 +1,5 @@
 ---
 title: "Barbell Lift Quality Prediction"
-author: "Gbolahan"
 date: "October 5, 2016"
 output: html_document
 ---
@@ -85,7 +84,7 @@ The model is built using the train function from the caret package. Because the 
 
 ```{r model_Building}
 set.seed(1)
-inTrain = createDataPartition(Data$classe, p = 0.8 , list = F)
+inTrain = createDataPartition(Data$classe, p = 0.85 , list = F)
 Training = Data[inTrain,]
 Testing = Data[-inTrain,]
 
@@ -96,7 +95,7 @@ fitControl = trainControl(method = "cv",
                           preProcOptions = list(thresh = 0.95),
                           allowParallel = T)
 
-tuningGrid = expand.grid(.cp = seq(.0001,.005,.0002))
+tuningGrid = expand.grid(.cp = seq(.00006,.0004,.00002))
 
 set.seed(1)
 fit = train(classe ~., data = Training, method = "rpart", preProcess = "pca", 
@@ -113,5 +112,12 @@ predTest = predict(fit, Testing)
 
 # Creates the confusion Matrix which generates the out-of-sample accuracy
 confusionMatrix(predTest, Testing$classe)
+```
+
+```{r Predicting_Test}
+pred = predict(fit, Test)
+solution = data.frame(problem.no = 1:20, classe = pred)
+
+solution
 ```
 
