@@ -1,58 +1,95 @@
 ---
 title: "Barbell Lift Quality Prediction"
-date: "October 5, 2016"
+date: "October 8, 2016"
+author: "Gbolahan"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = T, comment = "")
+knitr::opts_chunk$set(echo = T, comment = "", eval = T)
 library(ggplot2)
 library(caret)
+library(dplyr)
+library(reshape2)
 ```
 
 ##Introduction
-The Quantified Self Movement is a new trend in which enthusiasts take measurements using wearables to know how much of an activity they do. This project goes one step further to predict the quality of execution of the activity (in this case, barbell lifting) they do.
+The Quantified Self Movement is a new trend in which enthusiasts take measurements using wearables to know how much of an activity they do.  
+
+
+In this study, six participants were made to perform the lifting excercise in 5 different ways labeled; *A, B, C, D, E*, and for each record, the style or quality of the lift was recorded.  The aim of thid project is to predict the quality of execution of the activity (in this case, barbell lifting) of the participants on some never before seen data through the use of machine learing techniques.  
+
+
+This data is from [Qualitative Activity Recognition of Weight Lifting Excercises](http://groupware.les.inf.puc-rio.br/work.jsf?p1=11201) by *Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H.*
+
+## Loading The Data
+The Data is loaded into R for the Data science process; Exploration -> Munging & Preprocessing -> Model Building -> Cross-Validation -> Prediction.
+
 
 ```{r dataset_loading }
-if(!file.exists("~/Documents/MOOC materials/Data Science Specialization/Practical Machine Learning/Project/pml-training.csv")){
+library(ggplot2)
+library(caret)
+library(dplyr)
+library(reshape2)
+
+
+pmlTraining = "~/Documents/MOOC materials/Data Science Specialization/Practical Machine Learning/Project/pml-training.csv"
+pmlTesting =  "~/Documents/MOOC materials/Data Science Specialization/Practical Machine Learning/Project/pml-testing.csv"
+
+if(!file.exists(pmlTraining) & !file.exists(pmlTesting)){
         
         urlTrain = "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
-        download.file(destfile = "~/Documents/MOOC materials/Data Science Specialization/Practical Machine Learning/Project/pml-training.csv", url = urlTrain)
-        
-} else if(!file.exists("~/Documents/MOOC materials/Data Science Specialization/Practical Machine Learning/Project/pml-testing.csv")){
-        
+        download.file(destfile = pmlTraining, url = urlTrain)
         urlTest = "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
-        download.file(destfile = "~/Documents/MOOC materials/Data Science 
-Specialization/Practical Machine Learning/Project/pml-testing.csv", url = urlTest)
+        download.file(destfile = pmlTesting, url = urlTest)
+        
+}else{
+        
+        Data = read.csv(pmlTraining, stringsAsFactors = F, na.strings = c("NA",""))
+        Submission = read.csv(pmlTesting, stringsAsFactors = F, na.strings = c("NA","","#DIV/0!"))
         
 }
 
-TrainFile = "~/Documents/MOOC materials/Data Science Specialization/Practical Machine Learning/Project/pml-training.csv"
-TestFile = "~/Documents/MOOC materials/Data Science Specialization/Practical Machine Learning/Project/pml-testing.csv"
 
-Data = read.csv(TrainFile, stringsAsFactors = F, na.strings = c("NA",""))
-Test = read.csv(TestFile, stringsAsFactors = F)
-
-rm(TestFile, TrainFile)
+rm(pmlTesting, pmlTraining)
         
 ```
 
 ## Initial Exploration
-The data set contain variable with high missingness rates. This may necessitate imputation, listwise deletion or complete removal of the variables with high missingness rates. The figure below shows the missingness of the data set. Also, the Dependence of the outcome, "classe" on index is investigated.
+The dataset contains variables with high missingness rates. This may necessitate imputation, listwise deletion or complete removal of the variables with high missingness rates. The figure below shows the missingness of the data set. 
 
-```{r initial_Exploration1, fig.align='center'}
-suppressWarnings(library(Amelia))
+```{r initial_Exploration1, fig.align='center', fig.cap = "Missingness Map of the WLE dataset"}
+
 # produces missingness map
-missmap(Data, col = c("red","navy"), y.labels = NULL, y.at = NULL)
+ggplot_missing <- function(x){
+  
+  x %>% 
+    is.na %>%
+    melt %>%
+    ggplot(data = .,
+           aes(x = Var2,
+               y = Var1)) +
+    geom_raster(aes(fill = value)) +
+    scale_fill_brewer(name = "",
+                    labels = c("Present","Missing"), palette = "Set1") +
+    theme_minimal() + 
+    theme(axis.text.x  = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank()) + 
+    labs(x = "Variables in Dataset",
+         y = "Rows / observations")
+}
+
+ggplot_missing(Data)
 ```
 
-```{r, initial_Exploration2, fig.align= 'center'}
-# investigates classe w.r.t index
-with(Data, qplot(1:nrow(Data), factor(classe), col = factor(classe), xlab = "Index", ylab = "classe"))
-```
 
-The missingness map shows that the variables that contain missing values have a high missingness rate. Also the missingness according to the missingness map has a pattern to it and is therefore of the type **MNAR** (Missing Not At Random), that is missing systematically, so imputation would not be a good option. Hence, **the variables that contain these missing values would be discarded from the data set**.  
-Also, the second plot shows that outcome "classe" is dependent on the index. This would prevent some algorithms such as the logistic regression algorithm from converging. This issue can be easily rectified by randomizing the data set.
+
+The missingness map shows that the variables that contain missing values have a high missingness rate. Also the missingness according to the missingness map has a pattern to it and is therefore of the type **MNAR** (Missing Not At Random), that is missing systematically, so imputation would not be a good option. Hence, **the variables that contain these missing values would be discarded from the data set**. Also, Variables that serve as identifiers and time stamps would be discarded as they add no information to the analysis.
+
+## General Preprocessing
+The dataset is preprocessed accroding to the outline above, in the code below. First, variables that add no information to the analysis (Identifiers and timestamps) are discarded, then the function *missThreshold* deletes all variables That have a threshold equal to, or greater than the threshold argument passed to it. 
 
 ```{r prepoc_1}
 missThreshold = function(dataframe, threshold){
@@ -72,52 +109,97 @@ missThreshold = function(dataframe, threshold){
         x[toKeep]
 }
 
+# Removes Variables That are included only for identification and have no meaning to the Data
+Data = Data[,-(1:7)]
 
+# Removes Variables that have missingness rate of greater than or equal to 80 percent
 Data = missThreshold(Data, 80)
-Data$X = NULL
+
 Data = transform(Data, classe = factor(classe))
+
+rm(missThreshold)
 
 ```
 
-## Model Building
-The model is built using the train function from the caret package. Because the nature of the variables is not easy to understand, Principal components Analysis is used to extract principal components from the dataset with 95% variance built in. The model is the cross-validated using k-fold cross validation as specified by the *fitControl Variable*. The Model is printed below.
+## Model Building & Cross Validation
+The model is built using the train function from the caret package. Because the nature of the variables is not easy to understand, Principal components Analysis is used to extract principal components from the dataset with 99% variance built in. The model is the cross-validated using k-fold cross validation as specified by the *fitControl Variable*.  
+Two Models are built using the using the **Random Forest**, **CART**, and **Linear Discriminant Analysis** algorithms, and the models are cross-validated using the *cv* data subset to select the better. The accuracy of the better model is then evaluated using the *Testing* data subset.
 
 ```{r model_Building}
+suppressPackageStartupMessages(library(caret))
 set.seed(1)
-inTrain = createDataPartition(Data$classe, p = 0.85 , list = F)
+# splits Data into Training and Testing Sets
+inTrain = createDataPartition(Data$classe, p = 0.8 , list = F)
 Training = Data[inTrain,]
 Testing = Data[-inTrain,]
 
+# splits Testing into Cross-Validation and OOS Test
+inCv = createDataPartition(Testing$classe, p = 1/3, list = F)
+cv = Testing[inCv,]
+Testing = Testing[-inCv,]
 
-rm(inTrain)
+
 fitControl = trainControl(method = "cv",
                           number = 5,
-                          preProcOptions = list(thresh = 0.95),
                           allowParallel = T)
 
-tuningGrid = expand.grid(.cp = seq(.00006,.0004,.00002))
+tuningGrid = expand.grid(cp = seq(.00006,.0004,.00002))
+
 
 set.seed(1)
-fit = train(classe ~., data = Training, method = "rpart", preProcess = "pca", 
+# fits a random Forest model
+fitRf = train(classe ~., data = Training, method = "rf", trControl = fitControl)
+
+set.seed(1)
+# fits a CART model
+fitCART =  train(classe ~., data = Training, method = "rpart", 
             trControl = fitControl, tuneGrid = tuningGrid)
-fit
+
+
+rm(inTrain, inCv, Data, tuningGrid, fitControl)
+
+
 ```
 
+####RandomForest Accuracy
+```{r rf_accuracy}
+confusionMatrix(predict(fitRf, cv), cv$classe)$overall["Accuracy"]
+```
+
+####CART Accuracy
+```{r CART_accuracy}
+confusionMatrix(predict(fitCART, cv), cv$classe)$overall["Accuracy"]
+```
+
+##Conclusion
+The random forest model shows a superior accuracy to the CART model, and is therefore selected.
+```{r conclusion}
+print(fitRf)
+```
+
+
 ## Testing for Out-of-Sample Accuracy
-The outcome of the *Testing* dataset is predicted by calling the predict function on the model *fit* using the Testing dataset. The predictions are then compared to the actual values of the *classe* variable using a confusion matrix generated by the *confusionMatrix* function.
+The outcome of the *Testing* dataset is predicted by calling the predict function on the model *fitRf* using the Testing dataset. The predictions are then compared to the actual values of the *classe* variable using a confusion matrix generated by the *confusionMatrix* function.
 
 ```{r OoS_Accuracy}
 # Predicts the outcome of the Testing data set 
-predTest = predict(fit, Testing)
+predTest = predict(fitRf, Testing)
 
 # Creates the confusion Matrix which generates the out-of-sample accuracy
 confusionMatrix(predTest, Testing$classe)
+
+rm(Training, Testing, cv, fitCART)
 ```
 
-```{r Predicting_Test}
-pred = predict(fit, Test)
-solution = data.frame(problem.no = 1:20, classe = pred)
 
-solution
+
+##Prediction
+
+```{r Predicting_Test}
+pred = predict(fitRf, Submission)
+prediction = data.frame(problem.no = 1:20, classe = pred)
+
+prediction
+
 ```
 
