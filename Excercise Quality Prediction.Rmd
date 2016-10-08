@@ -1,7 +1,7 @@
 ---
 title: "Barbell Lift Quality Prediction"
-date: "October 8, 2016"
 author: "Gbolahan"
+date: "October 8, 2016"
 output: html_document
 ---
 
@@ -11,6 +11,8 @@ library(ggplot2)
 library(caret)
 library(dplyr)
 library(reshape2)
+library(rpart)
+library(randomForest)
 ```
 
 ##Introduction
@@ -122,8 +124,9 @@ rm(missThreshold)
 ```
 
 ## Model Building & Cross Validation
-The model is built using the train function from the caret package. Because the nature of the variables is not easy to understand, Principal components Analysis is used to extract principal components from the dataset with 99% variance built in. The model is the cross-validated using k-fold cross validation as specified by the *fitControl Variable*.  
-Two Models are built using the using the **Random Forest**, **CART**, and **Linear Discriminant Analysis** algorithms, and the models are cross-validated using the *cv* data subset to select the better. The accuracy of the better model is then evaluated using the *Testing* data subset.
+The model is built using the train function from the caret package. The model is the cross-validated using k-fold cross validation as specified by the *fitControl* Variable.  
+
+Two Models are built using the using the **Random Forest** and **CART** algorithms, and the models are cross-validated using the *cv* data subset to select the better. The accuracy of the better model is then evaluated using the *Testing* data subset.
 
 ```{r model_Building}
 suppressPackageStartupMessages(library(caret))

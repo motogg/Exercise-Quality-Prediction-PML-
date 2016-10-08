@@ -222,8 +222,8 @@ rm(missThreshold)</code></pre>
 </div>
 <div id="model-building-cross-validation" class="section level2">
 <h2>Model Building &amp; Cross Validation</h2>
-<p>The model is built using the train function from the caret package. Because the nature of the variables is not easy to understand, Principal components Analysis is used to extract principal components from the dataset with 99% variance built in. The model is the cross-validated using k-fold cross validation as specified by the <em>fitControl Variable</em>.<br />
-Two Models are built using the using the <strong>Random Forest</strong>, <strong>CART</strong>, and <strong>Linear Discriminant Analysis</strong> algorithms, and the models are cross-validated using the <em>cv</em> data subset to select the better. The accuracy of the better model is then evaluated using the <em>Testing</em> data subset.</p>
+<p>The model is built using the train function from the caret package. The model is the cross-validated using k-fold cross validation as specified by the <em>fitControl</em> Variable.</p>
+<p>Two Models are built using the using the <strong>Random Forest</strong> and <strong>CART</strong> algorithms, and the models are cross-validated using the <em>cv</em> data subset to select the better. The accuracy of the better model is then evaluated using the <em>Testing</em> data subset.</p>
 <pre class="r"><code>suppressPackageStartupMessages(library(caret))
 set.seed(1)
 # splits Data into Training and Testing Sets
@@ -246,24 +246,15 @@ tuningGrid = expand.grid(cp = seq(.00006,.0004,.00002))
 
 set.seed(1)
 # fits a random Forest model
-fitRf = train(classe ~., data = Training, method = &quot;rf&quot;, trControl = fitControl)</code></pre>
-<pre><code>Loading required package: randomForest</code></pre>
-<pre><code>randomForest 4.6-12</code></pre>
-<pre><code>Type rfNews() to see new features/changes/bug fixes.</code></pre>
-<pre><code>
-Attaching package: 'randomForest'</code></pre>
-<pre><code>The following object is masked from 'package:dplyr':
+fitRf = train(classe ~., data = Training, method = &quot;rf&quot;, trControl = fitControl)
 
-    combine</code></pre>
-<pre><code>The following object is masked from 'package:ggplot2':
-
-    margin</code></pre>
-<pre class="r"><code>set.seed(1)
+set.seed(1)
 # fits a CART model
 fitCART =  train(classe ~., data = Training, method = &quot;rpart&quot;, 
-            trControl = fitControl, tuneGrid = tuningGrid)</code></pre>
-<pre><code>Loading required package: rpart</code></pre>
-<pre class="r"><code>rm(inTrain, inCv, Data, tuningGrid, fitControl)</code></pre>
+            trControl = fitControl, tuneGrid = tuningGrid)
+
+
+rm(inTrain, inCv, Data, tuningGrid, fitControl)</code></pre>
 <div id="randomforest-accuracy" class="section level4">
 <h4>RandomForest Accuracy</h4>
 <pre class="r"><code>confusionMatrix(predict(fitRf, cv), cv$classe)$overall[&quot;Accuracy&quot;]</code></pre>
